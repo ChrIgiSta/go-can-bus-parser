@@ -1,8 +1,7 @@
 package iface
 
 import (
-	"errors"
-	"fmt"
+	"log"
 	"sync"
 
 	"github.com/angelodlfrtr/go-can"
@@ -27,6 +26,7 @@ func NewIface(iface string) *Iface {
 }
 
 func (i *Iface) Connect(wg *sync.WaitGroup) (chan<- *can.Frame, error) {
+
 	var err error
 
 	err = i.bus.Open()
@@ -43,14 +43,14 @@ func (i *Iface) Connect(wg *sync.WaitGroup) (chan<- *can.Frame, error) {
 		for true {
 			canFrame, ok := <-i.bus.ReadChan()
 			if !ok {
-				fmt.Println("error read can iface: ", err)
+				log.Println("error read can iface: ", err)
 				return
 			}
 			rxCh <- canFrame
 		}
 	}()
 
-	return nil, err
+	return rxCh, err
 }
 
 func (i *Iface) Disconnect() error {
@@ -58,6 +58,5 @@ func (i *Iface) Disconnect() error {
 }
 
 func (i *Iface) Send(message *can.Frame) error {
-	i.bus.Write(&can.Frame{})
-	return errors.New("not implemented")
+	return i.bus.Write(&can.Frame{})
 }

@@ -1,18 +1,15 @@
 package serial
 
 import (
-	"errors"
 	"log"
 	"sync"
 
-	"github.com/tarm/serial"
+	"github.com/angelodlfrtr/go-can"
+	"github.com/angelodlfrtr/go-can/transports"
 )
 
 const (
 	SERIAL_CAN_BUFFER_SIZE = 2048
-	SERIAL_CAN_PARITY_BIT  = serial.ParityNone
-	SERIAL_CAN_STOP_BIT    = serial.Stop1
-	SERIAL_CAN_DATA_BITS   = 8
 )
 
 const (
@@ -21,64 +18,50 @@ const (
 )
 
 type Serial struct {
-	path     string
-	baudRate int
-	buffer   []byte
-	port     *serial.Port
+	bus *can.Bus
 }
 
-func NewSerial(path string, baudRate int) *Serial {
+func NewSerial(port string, baudRate int) *Serial {
 	return &Serial{
-		path:     path,
-		baudRate: baudRate,
-		buffer:   make([]byte, SERIAL_CAN_BUFFER_SIZE),
+		bus: can.NewBus(&transports.USBCanAnalyzer{
+			Port:     port,
+			BaudRate: baudRate,
+		}),
 	}
 }
 
-func (s *Serial) Connect(wg *sync.WaitGroup) (chan<- []byte, error) {
+func (s *Serial) Connect(wg *sync.WaitGroup) (chan<- *can.Frame, error) {
 
 	var err error
 
-	config := &serial.Config{
-		Name:     s.path,
-		Baud:     s.baudRate,
-		Size:     SERIAL_CAN_DATA_BITS,
-		Parity:   SERIAL_CAN_PARITY_BIT,
-		StopBits: SERIAL_CAN_STOP_BIT,
-	}
-
-	s.port, err = serial.OpenPort(config)
+	err = s.bus.Open()
 	if err != nil {
 		return nil, err
 	}
 
-	rxCh := make(chan []byte, SERIAL_CAN_BUFFER_SIZE)
+	rxCh := make(chan *can.Frame, SERIAL_CAN_BUFFER_SIZE)
 
 	go func() {
 		defer wg.Done()
 		defer close(rxCh)
 
 		for true {
-			n, err := s.port.Read(s.buffer)
-			if err != nil {
-				log.Println("error reading from serial port: ", err)
+			canFrame, ok := <-s.bus.ReadChan()
+			if !ok {
+				log.Println("error read can iface: ", err)
 				return
 			}
-			if n > 0 {
-				rxCh <- s.buffer[:n]
-			}
+			rxCh <- canFrame
 		}
-
 	}()
 
-	return nil, errors.New("not implemented")
+	return rxCh, err
 }
 
 func (s *Serial) Disconnect() error {
-	return s.port.Close()
+	return s.bus.Close()
 }
 
-func (s *Serial) Send(message []byte) error {
-	_, err := s.port.Write(message)
-	return err
+func (s *Serial) Send(message *can.Frame) error {
+	return s.bus.Write(message)
 }

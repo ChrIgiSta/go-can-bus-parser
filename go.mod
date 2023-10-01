@@ -3,8 +3,8 @@ module GMCanDecoder
 go 1.20
 
 require (
+	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/angelodlfrtr/go-can v0.0.4
-	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 )
 
 require (
