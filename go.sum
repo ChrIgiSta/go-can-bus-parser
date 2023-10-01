@@ -1,0 +1,11 @@
+github.com/angelodlfrtr/go-can v0.0.4 h1:/Wj3ZQ2YWG2dfoHqZHchfP2sZ/UccbrEBTV0nj/HRKo=
+github.com/angelodlfrtr/go-can v0.0.4/go.mod h1:e9NV8485R6+MwVHY1424SxwpCzsIRYd6I8noHvgHzQQ=
+github.com/angelodlfrtr/serial v0.0.0-20190912094943-d028474db63c h1:Q5NYSNKJn3QdfE4q7yG6m+r0OLFrsC94KDQPGqj5OkE=
+github.com/angelodlfrtr/serial v0.0.0-20190912094943-d028474db63c/go.mod h1:kGJNzwu4M6uVHZPXuE7m6+f3BvYrhFH76a90n69CxEk=
+github.com/brutella/can v0.0.1 h1:Rz+2Zuje3NT79daon8wPN9+VphH3/kl1DP8Dhf/k1NI=
+github.com/brutella/can v0.0.1/go.mod h1:NYDxbQito3w4+4DcjWs/fpQ3xyaFdpXw/KYqtZFU98k=
+github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 h1:UyzmZLoiDWMRywV4DUYb9Fbt8uiOSooupjTq10vpvnU=
+github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07/go.mod h1:kDXzergiv9cbyO7IOYJZWg1U88JhDg3PB6klq9Hg2pA=
+golang.org/x/sys v0.0.0-20181213200352-4d1cda033e06/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
+golang.org/x/sys v0.12.0 h1:CM0HF96J0hcLAwsHPJZjfdNzs0gftsLfgKt57wWHJ0o=
+golang.org/x/sys v0.12.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
