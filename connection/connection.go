@@ -11,3 +11,8 @@ type Connection interface {
 	Disconnect() error
 	Send(message *can.Frame) error
 }
+
+type CanFrameParser interface {
+	Unmarshal(in []byte) *can.Frame
+	Marshal(*can.Frame) []byte
+}

@@ -26,7 +26,7 @@ func TestGMLanDecoder(t *testing.T) {
 		t.Error("decode temp failed: ", outTemp.CanValueDef.Value)
 	}
 
-	t.Logf("%s is %v%s", outTemp.CanValueDef.Name, outTemp.CanValueDef.Value, outTemp.CanValueDef.Unit)
+	printCanValueInfos(t, outTemp)
 
 	// DateTime
 	fr.ArbitrationID = uint32(GMLanDate)
@@ -39,6 +39,25 @@ func TestGMLanDecoder(t *testing.T) {
 	if dateTime.CanValueDef.Value.(string) != "23-5-11T16:3:0" {
 		t.Error("decode date failed: ", dateTime.CanValueDef.Value)
 	}
+	printCanValueInfos(t, dateTime)
 
-	t.Logf("%s is %v%s", dateTime.CanValueDef.Name, dateTime.CanValueDef.Value, dateTime.CanValueDef.Unit)
+	// Speeds (RPM / km/h)
+	fr.ArbitrationID = uint32(GMLanSpeeds)
+	fr.Data = [8]uint8{0x23, 0x20, 0x98, 0x00, 0x04, 0xe5, 0x00, 0x00}
+	err = d.GMLanDecoder(&fr)
+	if err != nil {
+		t.Error(err)
+	}
+	engineSpeed := d.GetGMLanValue(EngineSpeedRPM)
+	vehicleSpeed := d.GetGMLanValue(VehicleSpeed)
+	// if dateTime.CanValueDef.Value.(string) != "23-5-11T16:3:0" {
+	// 	t.Error("decode date failed: ", dateTime.CanValueDef.Value)
+	// }
+
+	printCanValueInfos(t, engineSpeed)
+	printCanValueInfos(t, vehicleSpeed)
+}
+
+func printCanValueInfos(t *testing.T, canValue *CanValueMap) {
+	t.Logf("%s is %v%s", canValue.CanValueDef.Name, canValue.CanValueDef.Value, canValue.CanValueDef.Unit)
 }
