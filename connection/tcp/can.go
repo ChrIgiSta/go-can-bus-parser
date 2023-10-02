@@ -30,7 +30,7 @@ func NewTcpClient(address string, port uint16) *TcpClient {
 	}
 }
 
-func (c *TcpClient) Connect(wg *sync.WaitGroup) (chan<- *can.Frame, error) {
+func (c *TcpClient) Connect(wg *sync.WaitGroup) (<-chan *can.Frame, error) {
 
 	var err error
 

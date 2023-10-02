@@ -13,7 +13,7 @@ const (
 )
 
 const (
-	SERIAL_CAN_DEFAULT_PATH     = "/dev/ttyS1234"
+	SERIAL_CAN_DEFAULT_PORT     = "/dev/ttyS1234"
 	SERLAL_CAN_DEFAULT_BAUDRATE = 25000
 )
 
@@ -30,7 +30,7 @@ func NewSerial(port string, baudRate int) *Serial {
 	}
 }
 
-func (s *Serial) Connect(wg *sync.WaitGroup) (chan<- *can.Frame, error) {
+func (s *Serial) Connect(wg *sync.WaitGroup) (<-chan *can.Frame, error) {
 
 	var err error
 

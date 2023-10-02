@@ -25,7 +25,7 @@ func NewIface(iface string) *Iface {
 	}
 }
 
-func (i *Iface) Connect(wg *sync.WaitGroup) (chan<- *can.Frame, error) {
+func (i *Iface) Connect(wg *sync.WaitGroup) (<-chan *can.Frame, error) {
 
 	var err error
 

@@ -2,16 +2,20 @@ package can
 
 import (
 	"errors"
-	"fmt"
 	"go/token"
 	"go/types"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"GMCanDecoder/utils"
+
 	"github.com/Knetic/govaluate"
 	"github.com/angelodlfrtr/go-can"
 )
+
+const EVENT_CHANNEL_BUFFER_SIZE = 1000
 
 type Decoder struct {
 	lowSpeedBuffer  []can.Frame
@@ -20,6 +24,8 @@ type Decoder struct {
 	midSpeedValues  []CanValueMap
 	highSpeedBuffer []can.Frame
 	highSpeedValues []CanValueMap
+
+	eventChannels []chan<- CanValueMap
 }
 
 func NewCanDecoder() *Decoder {
@@ -28,11 +34,20 @@ func NewCanDecoder() *Decoder {
 		midSpeedBuffer:  []can.Frame{},
 		highSpeedBuffer: []can.Frame{},
 
-		lowSpeedValues: GMLanValueMapps(),
+		lowSpeedValues:  GMLanValueMapps(),
+		midSpeedValues:  EntertainmentCANValueMapps(),
+		highSpeedValues: HighSpeedValueMapps(),
 	}
 }
 
-func (d *Decoder) GetGMLanValue(name string) *CanValueMap {
+func (d *Decoder) GetEventChannel() <-chan CanValueMap {
+	event := make(chan CanValueMap, EVENT_CHANNEL_BUFFER_SIZE)
+	d.eventChannels = append(d.eventChannels, event)
+
+	return event
+}
+
+func (d *Decoder) GetGMLanValue(name CanVars) *CanValueMap {
 	for _, val := range d.lowSpeedValues {
 		if val.CanValueDef.Name == name {
 			return &val
@@ -41,7 +56,7 @@ func (d *Decoder) GetGMLanValue(name string) *CanValueMap {
 	return nil
 }
 
-func (d *Decoder) GetEntertainmentCANValue(name string) *CanValueMap {
+func (d *Decoder) GetEntertainmentCANValue(name CanVars) *CanValueMap {
 	for _, val := range d.midSpeedValues {
 		if val.CanValueDef.Name == name {
 			return &val
@@ -50,7 +65,7 @@ func (d *Decoder) GetEntertainmentCANValue(name string) *CanValueMap {
 	return nil
 }
 
-func (d *Decoder) GetHighSpeedCANValue(name string) *CanValueMap {
+func (d *Decoder) GetHighSpeedCANValue(name CanVars) *CanValueMap {
 	for _, val := range d.highSpeedValues {
 		if val.CanValueDef.Name == name {
 			return &val
@@ -62,47 +77,47 @@ func (d *Decoder) GetHighSpeedCANValue(name string) *CanValueMap {
 func (d *Decoder) GMLanDecoder(frame *can.Frame) error {
 
 	for i, mapping := range d.lowSpeedValues {
-		if mapping.ArbitrationID == GMLanArbitrationIDs(frame.ArbitrationID) {
-			condition, err := d.substituteVars(mapping.CanValueDef.Condition, frame)
+		if mapping.ArbitrationID == frame.ArbitrationID {
+			err := d.processFrame(&d.lowSpeedValues[i], frame)
 			if err != nil {
 				return err
+			} else {
+				continue
 			}
-			fmt.Println(condition)
-
-			fileSet := token.NewFileSet()
-			tav, err := types.Eval(fileSet, nil, token.NoPos, condition)
-			if err != nil {
-				return err
-			}
-			if tav.Value.String() == "true" {
-				equation, err := d.substituteVars(mapping.CanValueDef.Calculation, frame)
-				if err != nil {
-					return err
-				}
-				fmt.Println(equation)
-				expression, err := govaluate.NewEvaluableExpression(equation)
-				if err != nil {
-					return err
-				}
-				result, err := expression.Evaluate(nil)
-				if err != nil {
-					return err
-				}
-				d.lowSpeedValues[i].CanValueDef.Value = result
-				return nil
-			}
-
 		}
 	}
-	return errors.New("no mapping for incoming frame found")
+
+	return nil
 }
 
 func (d *Decoder) EntertainmentCANDecoder(frame *can.Frame) error {
-	return errors.New("not implemented")
+	for i, mapping := range d.midSpeedValues {
+		if mapping.ArbitrationID == frame.ArbitrationID {
+			err := d.processFrame(&d.midSpeedValues[i], frame)
+			if err != nil {
+				return err
+			} else {
+				continue
+			}
+		}
+	}
+
+	return nil
 }
 
 func (d *Decoder) HighSpeedCANDecoder(frame *can.Frame) error {
-	return errors.New("not implemented")
+	for i, mapping := range d.highSpeedValues {
+		if mapping.ArbitrationID == frame.ArbitrationID {
+			err := d.processFrame(&d.highSpeedValues[i], frame)
+			if err != nil {
+				return err
+			} else {
+				continue
+			}
+		}
+	}
+
+	return nil
 }
 
 func (d *Decoder) GMLanPushFrame(frame *can.Frame) error {
@@ -181,6 +196,78 @@ func (d *Decoder) highSpeedCANFindFrameByArbitrationId(arbitrationID uint32) *ca
 		}
 	}
 	return nil
+}
+
+func (d *Decoder) processFrame(mapping *CanValueMap, frame *can.Frame) error {
+	condition, err := d.substituteVars(mapping.CanValueDef.Condition, frame)
+	if err != nil {
+		return err
+	}
+
+	fileSet := token.NewFileSet()
+	tav, err := types.Eval(fileSet, nil, token.NoPos, condition)
+	if err != nil {
+		return err
+	}
+	if tav.Value.String() == "true" {
+		equation, err := d.substituteVars(mapping.CanValueDef.Calculation, frame)
+		if err != nil {
+			return err
+		}
+		formatedString := false
+		splittedEquation := strings.Split(equation, ";")
+		if len(splittedEquation) != 1 {
+			formatedString = true
+		}
+		if !formatedString {
+			expression, err := govaluate.NewEvaluableExpression(equation)
+			if err != nil {
+				return err
+			}
+			result, err := expression.Evaluate(nil)
+			if err != nil {
+				return err
+			}
+			mapping.CanValueDef.Value = result
+			if mapping.TriggerEvent {
+				d.processEvent(mapping)
+			}
+			return nil
+		} else {
+			output := ""
+			for sIndx, split := range splittedEquation {
+				expression, err := govaluate.NewEvaluableExpression(split)
+				if err != nil {
+					return err
+				}
+				result, err := expression.Evaluate(nil)
+				if err != nil {
+					return err
+				}
+				output += utils.InterfaceToString(result)
+				if len(mapping.CanValueDef.FormatSeperators) > sIndx {
+					output += mapping.CanValueDef.FormatSeperators[sIndx]
+				}
+			}
+			mapping.CanValueDef.Value = output
+			if mapping.TriggerEvent {
+				d.processEvent(mapping)
+			}
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func (d *Decoder) processEvent(canVal *CanValueMap) {
+	if canVal != nil {
+		for _, evtCh := range d.eventChannels {
+			evtCh <- *canVal
+		}
+	} else {
+		log.Println("error event: value <nil>")
+	}
 }
 
 func (d *Decoder) substituteVars(query string, frame *can.Frame) (string, error) {
