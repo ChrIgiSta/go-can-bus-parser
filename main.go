@@ -44,8 +44,9 @@ func main() {
 			if !ok {
 				log.Panic("error rx channel")
 			}
-
-			log.Printf("debug: RX > ArbID: [0x%X] %d, \tData: %v \t[0x%X]\t%s", canFrame.ArbitrationID, canFrame.ArbitrationID, canFrame.Data, canFrame.Data, canFrame.Data)
+			if canFrame.ArbitrationID == uint32(can.EntertainmentCANAirConditioner) && canFrame.Data[0] == 0x22 {
+				log.Printf("debug: RX > ArbID: [0x%X] %d, \tData: %v \t[0x%X]\t%s", canFrame.ArbitrationID, canFrame.ArbitrationID, canFrame.Data, canFrame.Data, canFrame.Data)
+			}
 			err = decoder.EntertainmentCANDecoder(canFrame)
 			if err != nil {
 				log.Println("error decoding frame, ", err)
