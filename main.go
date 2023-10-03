@@ -47,7 +47,11 @@ func main() {
 			if canFrame.ArbitrationID == uint32(can.EntertainmentCANAirConditioner) && canFrame.Data[0] == 0x22 {
 				log.Printf("debug: RX > ArbID: [0x%X] %d, \tData: %v \t[0x%X]\t%s", canFrame.ArbitrationID, canFrame.ArbitrationID, canFrame.Data, canFrame.Data, canFrame.Data)
 			}
-			err = decoder.EntertainmentCANDecoder(canFrame)
+			// err = decoder.EntertainmentCANDecoder(canFrame)
+			// if err != nil {
+			// 	log.Println("error decoding frame, ", err)
+			// }
+			err = decoder.GMLanDecoder(canFrame)
 			if err != nil {
 				log.Println("error decoding frame, ", err)
 			}

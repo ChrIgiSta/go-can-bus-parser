@@ -19,7 +19,7 @@ func NewCanDriveParser() *CanDriveParser {
 func (p *CanDriveParser) Unmarshal(in []byte) *can.Frame {
 	split := strings.Split(string(in), ",")
 	if len(split) != 4 {
-		// log.Println("canDrive Pck don't seem to formated properly. len ", len(split))
+		// log.Println("canDrive Pck don't seem to formated properly. rx: ", string(in))
 		return nil
 	}
 	arbitrationID, err := strconv.ParseUint(split[0], 16, 32)
