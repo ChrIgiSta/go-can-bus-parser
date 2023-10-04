@@ -7,26 +7,31 @@ const (
 	ACMode             CanVars = "AC Mode"
 	ACFanSpeed         CanVars = "AC Fan Speed"
 	BatteryVoltage     CanVars = "Battery Voltage" // tested
-	BusWakeup          CanVars = "CAN-Bus Wakeup"
-	BreakState         CanVars = "Break State" // tested
+	BusWakeup          CanVars = "CAN-Bus Wakeup"  // tested
+	BreakState         CanVars = "Break State"     // tested
 	DateTime           CanVars = "Date"
 	EngineSpeedRPM     CanVars = "Engine RPM" // tested
 	FullInjection      CanVars = "Full Injection"
-	FullLevel          CanVars = "Full Level"
+	FullLevel          CanVars = "Full Level"     // it is highly possible the level, but 0 - 255
 	LedBrightness      CanVars = "Led Brightness" // tested
 	Milage             CanVars = "Milage"
-	OutdoorTemperature CanVars = "Output Temperature"
-	VehicleSpeed       CanVars = "Speed" // tested
-	WeelKey            CanVars = "Weel Remote Key"
+	OutdoorTemperature CanVars = "Output Temperature"     // tested
+	VehicleSpeed       CanVars = "Speed"                  // tested
+	WeelKey            CanVars = "Weel Remote Key"        // tested
 	DisplayR1C1        CanVars = "Display Row 1 Column 1" // tested
 	DisplayR1C2        CanVars = "Display Row 1 Column 2" // tested
 	DisplayR1C3        CanVars = "Display Row 1 Column 3" // tested
 	DisplayR1C4        CanVars = "Display Row 1 Column 4" // tested
-	LightSwitch        CanVars = "Light Switch"
-	LightLeveler       CanVars = "Light Leveler"
-	LightBack          CanVars = "Light Back"
-	DoorState          CanVars = "Door State"
-	EngineRunningState CanVars = "Engine State"
+	LightSwitch        CanVars = "Light Switch"           // tested
+	LightLeveler       CanVars = "Light Leveler"          // tested
+	LightBack          CanVars = "Light Back"             // tested
+	DoorState          CanVars = "Door State"             // tested
+	EngineRunningState CanVars = "Engine State"           // tested
+	TurnLights         CanVars = "Turn Lights"            // dont work
+	CoolantTemperature CanVars = "Coolant Temperature"    // tested
+	TPMS               CanVars = "Tire Pressure Monitoring System"
+	CruseControl       CanVars = "Cruse Control" // tested
+	SystemTime         CanVars = "System Time"
 )
 
 // low speed
@@ -54,6 +59,7 @@ const (
 
 	LIGHT_BACK_FOG       = 0x80
 	LIGHT_BACK_HANDBRAKE = 0x01
+	LIGHT_BACK_WISHWATER = 0x03 // maybe also bulbs?
 
 	DOOR_STATE_FRONT_LEFT_OPEN   = 0x40
 	DOOR_STATE_FRONT_RIGHT_OPPEN = 0x10
@@ -64,8 +70,11 @@ const (
 
 	ENGINE_OFF             = 0x00
 	ENGINE_IGNITION_ON     = 0x03
-	ENGINE_STARTER_RUNNING = 0x43 // -> 4 starter        -> 3 ignition
-	ENGINE_RUNNING         = 0x13 // -> 1 engine running -> 3 ignition
+	ENGINE_STARTER_RUNNING = 0x43 // -> 4 starter                    -> 3 ignition
+	ENGINE_RUNNING         = 0x13 // -> 1 engine running             -> 3 ignition
+	ENGINE_RUNNING_DRIVING = 0x23 // -> 2 engine running and driving -> 3 ignition
+
+	CRUSE_CONTROLL_ON = 0x06 // 0x04 off
 )
 
 // mid speed
@@ -85,6 +94,8 @@ const (
 	GMLanBusWakeup          GMLanArbitrationIDs = 0x100 // tested
 	GMLanEngineSpeedRPM     GMLanArbitrationIDs = 0x108 // tested // -->> maybe also cool water temperature ..?
 	GMLanFullInjection      GMLanArbitrationIDs = 0x130 // not valid
+	GMLanCoolant            GMLanArbitrationIDs = 0x145 // tested
+	GMLanCruseControl       GMLanArbitrationIDs = 0x145
 	GMLanWeelRemoteControll GMLanArbitrationIDs = 0x175 // tested
 	GMLanMilage             GMLanArbitrationIDs = 0x190 // not valid
 	GMLanDoorState          GMLanArbitrationIDs = 0x230 // tested
@@ -94,7 +105,10 @@ const (
 	GMLanClutchBreak        GMLanArbitrationIDs = 0x360 // tested
 	GMLanLightBack          GMLanArbitrationIDs = 0x370 // tested
 	GMLanFullLevel          GMLanArbitrationIDs = 0x375 // not valid
+	GMLanSysTime            GMLanArbitrationIDs = 0x440
+	GMLanOutputTemperature  GMLanArbitrationIDs = 0x445
 	GMLanBatteryVoltage     GMLanArbitrationIDs = 0x500 // tested)
+	GMLanTPMS               GMLanArbitrationIDs = 0x530
 )
 
 // Opel's MidSpeed CAN
@@ -104,8 +118,8 @@ const (
 	EntertainmentCANDisplayData    EntertainmentCANArbitrationIDs = 0x6c1 // partialy tested
 	EntertainmentCANAirConditioner EntertainmentCANArbitrationIDs = 0x6c8 // tested
 	// EntertainmentCANAirConditioner GMLanArbitrationIDs = 0x206 //
-	// EntertainmentCANAirConditioner GMLanArbitrationIDs = 0x180 // don't work after python -> possibly, this was mid speed can
-	// EntertainmentCANAirConditioner GMLanArbitrationIDs = 0x683 // don't work after python -> possibly, this was mid speed can
+	EntertainmentCANDate GMLanArbitrationIDs = 0x180 // don't work after python -> possibly, this was mid speed can -> not possibly, it is
+	// EntertainmentCANAirConditioner GMLanArbitrationIDs = 0x683 // don't work after python -> possibly, this was mid speed can -> not possibly, it is
 )
 
 type HighSpeedCANArbitrationIDs uint32
@@ -135,8 +149,18 @@ func GMLanValueMapps() []CanValueMap {
 			CanValueDef: CanValueDef{
 				Unit:        "Key Action",
 				Calculation: "${5}",
-				Condition:   "${0} == 0x00 && ${1} == 0x00 && ${2} == 0x00 && ${3} == 0x00 && ${4} == 0x00",
+				Condition:   "${2} == 0x00 && ${3} == 0x00",
 				Name:        WeelKey,
+			},
+			TriggerEvent: true,
+		},
+		{
+			ArbitrationID: uint32(GMLanWeelRemoteControll),
+			CanValueDef: CanValueDef{
+				Unit:        "Turn Lights",
+				Calculation: "${4}",
+				Condition:   "${2} == 0x00 && ${3} == 0x00",
+				Name:        TurnLights,
 			},
 			TriggerEvent: true,
 		},
@@ -184,7 +208,7 @@ func GMLanValueMapps() []CanValueMap {
 			ArbitrationID: uint32(GMLanMilage),
 			CanValueDef: CanValueDef{
 				Unit:        "km",
-				Calculation: "(${2}*256 + ${4}) / 64",
+				Calculation: "${2}*65536 + ${3}*256 +${4}",
 				Condition:   "1 == 1", // ${0} == 0x23"
 				Name:        Milage,
 			},
@@ -224,14 +248,14 @@ func GMLanValueMapps() []CanValueMap {
 			ArbitrationID: uint32(GMLanFullLevel),
 			CanValueDef: CanValueDef{
 				Unit:        "l",
-				Calculation: "${1}",
+				Calculation: "${1} * 0.21", // 256 / 2.56 -> 100% -> OPC = 52l
 				Condition:   "${0} == 0x00",
 				Name:        FullLevel,
 			},
 			TriggerEvent: true,
 		},
 		{
-			ArbitrationID: uint32(GMLanFullLevel),
+			ArbitrationID: uint32(GMLanFullInjection),
 			CanValueDef: CanValueDef{
 				Unit:        "ml",
 				Calculation: "(${1} * 256 + ${2}) * 0.03054",
@@ -280,6 +304,56 @@ func GMLanValueMapps() []CanValueMap {
 			},
 			TriggerEvent: true,
 		},
+		{
+			ArbitrationID: uint32(GMLanCoolant),
+			CanValueDef: CanValueDef{
+				Unit:        "°C",
+				Calculation: "${3} - 40",
+				Condition:   "${5} == 0x04 && ${6} == 0",
+				Name:        CoolantTemperature,
+			},
+			TriggerEvent: true,
+		},
+		{
+			ArbitrationID: uint32(GMLanOutputTemperature),
+			CanValueDef: CanValueDef{
+				Unit:        "°C",
+				Calculation: "${1} / 2 - 40",
+				Condition:   "${0} == 0x00",
+				Name:        OutdoorTemperature,
+			},
+			TriggerEvent: true,
+		},
+		{
+			ArbitrationID: uint32(GMLanTPMS),
+			CanValueDef: CanValueDef{
+				Unit:        "bar",
+				Calculation: "${2}/25;${3}/25;${4}/25;${5}/25",
+				Condition:   "1 == 1",
+				Name:        TPMS,
+			},
+			TriggerEvent: true,
+		},
+		{
+			ArbitrationID: uint32(GMLanCruseControl),
+			CanValueDef: CanValueDef{
+				Unit:        "km/h",
+				Calculation: "${5}",
+				Condition:   "1 == 1",
+				Name:        CruseControl,
+			},
+			TriggerEvent: true,
+		},
+		{
+			ArbitrationID: uint32(GMLanSysTime),
+			CanValueDef: CanValueDef{
+				Unit:        "",
+				Calculation: "${0};${1};${2}",
+				Condition:   "1 == 1",
+				Name:        SystemTime,
+			},
+			TriggerEvent: true,
+		},
 	}
 }
 
@@ -295,17 +369,17 @@ func EntertainmentCANValueMapps() []CanValueMap {
 		// 	},
 		// 	TriggerEvent: true,
 		// },
-		// {
-		// 	ArbitrationID: uint32(EntertainmentCANDate),
-		// 	CanValueDef: CanValueDef{
-		// 		Unit:             "",
-		// 		Calculation:      "${1};${2};${3};${4}+4;${5};${6}", // as formated string (;)
-		// 		FormatSeperators: []string{"-", "-", "T", ":", ":"}, // 2007-12-24T18:21
-		// 		Condition:        "1 == 1",                          // ever
-		// 		Name:             DateTime,
-		// 	},
-		// 	TriggerEvent: true,
-		// },
+		{
+			ArbitrationID: uint32(EntertainmentCANDate),
+			CanValueDef: CanValueDef{
+				Unit:             "",
+				Calculation:      "${1};${2};${3};${4}+4;${5};${6}", // as formated string (;) // Year(2) 	Month(3) 	5B:Day, 3b:Hour 	2b:Hour, 6b:Minute 	Second // see https://github.com/JJToB/Car-CAN-Message-DB/blob/master/Opel/Astra/H/MS-CAN/Body.md
+				FormatSeperators: []string{"-", "-", "T", ":", ":"}, // 2007-12-24T18:21
+				Condition:        "1 == 1",                          // ever
+				Name:             DateTime,
+			},
+			TriggerEvent: true,
+		},
 		{
 			ArbitrationID: uint32(EntertainmentCANAirConditioner),
 			CanValueDef: CanValueDef{
