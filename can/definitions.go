@@ -24,7 +24,7 @@ const (
 	DisplayR1C4        CanVars = "Display Row 1 Column 4" // tested
 	LightSwitch        CanVars = "Light Switch"
 	LightLeveler       CanVars = "Light Leveler"
-	LightFogBack       CanVars = "Fog Light Back"
+	LightBack          CanVars = "Light Back"
 	DoorState          CanVars = "Door State"
 	EngineRunningState CanVars = "Engine State"
 )
@@ -47,9 +47,13 @@ const (
 	DRIVING_LIGHT_OFF      = 0x00
 	DRIVING_LIGHT_PARKING  = 0x40
 	DRIVING_LIGHT_LOW_BEAM = 0xc0
+	DRIVING_LIGHT_REVERSE  = 0x01
 
 	LIGHT_LEVELER_HIGH_BEAM_BIT = 0x40
 	LIGHT_LEVELER_FOG_FRONT_BIT = 0x20
+
+	LIGHT_BACK_FOG       = 0x80
+	LIGHT_BACK_HANDBRAKE = 0x01
 
 	DOOR_STATE_FRONT_LEFT_OPEN   = 0x40
 	DOOR_STATE_FRONT_RIGHT_OPPEN = 0x10
@@ -81,15 +85,15 @@ const (
 	GMLanBusWakeup          GMLanArbitrationIDs = 0x100 // tested
 	GMLanEngineSpeedRPM     GMLanArbitrationIDs = 0x108 // tested // -->> maybe also cool water temperature ..?
 	GMLanFullInjection      GMLanArbitrationIDs = 0x130 // not valid
+	GMLanWeelRemoteControll GMLanArbitrationIDs = 0x175 // tested
 	GMLanMilage             GMLanArbitrationIDs = 0x190 // not valid
-	GMLanDoorState          GMLanArbitrationIDs = 0x230
+	GMLanDoorState          GMLanArbitrationIDs = 0x230 // tested
 	GMLanLedBrightness      GMLanArbitrationIDs = 0x235 // tested
-	GMLanLightSwitch        GMLanArbitrationIDs = 0x305
-	GMLanLightLevler        GMLanArbitrationIDs = 0x350
+	GMLanLightSwitch        GMLanArbitrationIDs = 0x305 // tested
+	GMLanLightLevler        GMLanArbitrationIDs = 0x350 // tested
 	GMLanClutchBreak        GMLanArbitrationIDs = 0x360 // tested
-	GMLanFogBack            GMLanArbitrationIDs = 0x370
+	GMLanLightBack          GMLanArbitrationIDs = 0x370 // tested
 	GMLanFullLevel          GMLanArbitrationIDs = 0x375 // not valid
-	GMLanWeelRemoteControll GMLanArbitrationIDs = 0x500 //
 	GMLanBatteryVoltage     GMLanArbitrationIDs = 0x500 // tested)
 )
 
@@ -257,12 +261,12 @@ func GMLanValueMapps() []CanValueMap {
 			TriggerEvent: true,
 		},
 		{
-			ArbitrationID: uint32(GMLanFogBack),
+			ArbitrationID: uint32(GMLanLightBack),
 			CanValueDef: CanValueDef{
 				Unit:        "",
 				Calculation: "${1}",
 				Condition:   "${0} == 0",
-				Name:        LightFogBack,
+				Name:        LightBack,
 			},
 			TriggerEvent: true,
 		},
