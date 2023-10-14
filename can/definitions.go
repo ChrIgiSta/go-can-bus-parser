@@ -1,4 +1,31 @@
+/**
+ * Copyright © 2023, Staufi Tech - Switzerland
+ * All rights reserved.
+ *
+ *   ________________________   ___ _     ________________  _  ____
+ *  / _____  _  ____________/  / __|_|   /_______________  | | ___/
+ * ( (____ _| |_ _____ _   _ _| |__ _      | |_____  ____| |_|_
+ *  \____ (_   _|____ | | | (_   __) |     | | ___ |/ ___)  _  \
+ *  _____) )| |_/ ___ | |_| | | |  | |     | | ____( (___| | | |
+ * (______/  \__)_____|____/  |_|  |_|     |_|_____)\____)_| |_|
+ *
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package can
+
+import "fmt"
 
 type CanVars string
 
@@ -6,15 +33,15 @@ const (
 	ACTemperature      CanVars = "AC Temperature"
 	ACMode             CanVars = "AC Mode"
 	ACFanSpeed         CanVars = "AC Fan Speed"
-	BatteryVoltage     CanVars = "Battery Voltage" // tested
-	BusWakeup          CanVars = "CAN-Bus Wakeup"  // tested
-	BreakState         CanVars = "Break State"     // tested
-	DateTime           CanVars = "Date"
-	EngineSpeedRPM     CanVars = "Engine RPM" // tested
-	FullInjection      CanVars = "Full Injection"
-	FullLevel          CanVars = "Full Level"     // it is highly possible the level, but 0 - 255
-	LedBrightness      CanVars = "Led Brightness" // tested
-	Milage             CanVars = "Milage"
+	BatteryVoltage     CanVars = "Battery Voltage"        // tested
+	BusWakeup          CanVars = "CAN-Bus Wakeup"         // tested
+	BreakState         CanVars = "Break State"            // tested
+	DateTime           CanVars = "Date"                   // tested
+	EngineSpeedRPM     CanVars = "Engine RPM"             // tested
+	FullInjection      CanVars = "Full Injection"         // partialy tested
+	FullLevel          CanVars = "Full Level"             // tested
+	LedBrightness      CanVars = "Led Brightness"         // tested
+	Milage             CanVars = "Milage"                 // tested
 	OutdoorTemperature CanVars = "Output Temperature"     // tested
 	VehicleSpeed       CanVars = "Speed"                  // tested
 	WeelKey            CanVars = "Weel Remote Key"        // tested
@@ -87,28 +114,32 @@ const (
 	SOME_HIGH_SPEED = 0x00
 )
 
+const (
+	FULL_CAPACITY_L = 52
+)
+
 // Opel's LowSpeed SW-CAN
 type GMLanArbitrationIDs uint32
 
 const (
 	GMLanBusWakeup          GMLanArbitrationIDs = 0x100 // tested
-	GMLanEngineSpeedRPM     GMLanArbitrationIDs = 0x108 // tested // -->> maybe also cool water temperature ..?
-	GMLanFullInjection      GMLanArbitrationIDs = 0x130 // not valid
+	GMLanEngineSpeedRPM     GMLanArbitrationIDs = 0x108 // tested
+	GMLanFullInjection      GMLanArbitrationIDs = 0x130 // not valid as it is, seems to be a counter (ml/s or something like that)
 	GMLanCoolant            GMLanArbitrationIDs = 0x145 // tested
-	GMLanCruseControl       GMLanArbitrationIDs = 0x145
+	GMLanCruseControl       GMLanArbitrationIDs = 0x145 // tested
 	GMLanWeelRemoteControll GMLanArbitrationIDs = 0x175 // tested
-	GMLanMilage             GMLanArbitrationIDs = 0x190 // not valid
+	GMLanMilage             GMLanArbitrationIDs = 0x190 // tested
 	GMLanDoorState          GMLanArbitrationIDs = 0x230 // tested
 	GMLanLedBrightness      GMLanArbitrationIDs = 0x235 // tested
 	GMLanLightSwitch        GMLanArbitrationIDs = 0x305 // tested
 	GMLanLightLevler        GMLanArbitrationIDs = 0x350 // tested
 	GMLanClutchBreak        GMLanArbitrationIDs = 0x360 // tested
 	GMLanLightBack          GMLanArbitrationIDs = 0x370 // tested
-	GMLanFullLevel          GMLanArbitrationIDs = 0x375 // not valid
+	GMLanFullLevel          GMLanArbitrationIDs = 0x375 // tested
 	GMLanSysTime            GMLanArbitrationIDs = 0x440
-	GMLanOutputTemperature  GMLanArbitrationIDs = 0x445
-	GMLanBatteryVoltage     GMLanArbitrationIDs = 0x500 // tested)
-	GMLanTPMS               GMLanArbitrationIDs = 0x530
+	GMLanOutputTemperature  GMLanArbitrationIDs = 0x445 // tested
+	GMLanBatteryVoltage     GMLanArbitrationIDs = 0x500 // tested
+	GMLanTPMS               GMLanArbitrationIDs = 0x530 // unknown
 )
 
 // Opel's MidSpeed CAN
@@ -116,9 +147,9 @@ type EntertainmentCANArbitrationIDs uint32
 
 const (
 	EntertainmentCANDisplayData    EntertainmentCANArbitrationIDs = 0x6c1 // partialy tested
-	EntertainmentCANAirConditioner EntertainmentCANArbitrationIDs = 0x6c8 // tested
+	EntertainmentCANAirConditioner EntertainmentCANArbitrationIDs = 0x6c8 //
 	// EntertainmentCANAirConditioner GMLanArbitrationIDs = 0x206 //
-	EntertainmentCANDate GMLanArbitrationIDs = 0x180 // don't work after python -> possibly, this was mid speed can -> not possibly, it is
+	EntertainmentCANDate GMLanArbitrationIDs = 0x180 // tested
 	// EntertainmentCANAirConditioner GMLanArbitrationIDs = 0x683 // don't work after python -> possibly, this was mid speed can -> not possibly, it is
 )
 
@@ -208,8 +239,8 @@ func GMLanValueMapps() []CanValueMap {
 			ArbitrationID: uint32(GMLanMilage),
 			CanValueDef: CanValueDef{
 				Unit:        "km",
-				Calculation: "${2}*65536 + ${3}*256 +${4}",
-				Condition:   "1 == 1", // ${0} == 0x23"
+				Calculation: "(${2}*65536 + ${3}*256 +${4}) / 64", // 00 00 98 92 c0 00 21
+				Condition:   "1 == 1",                             // ${0} == 0x23"
 				Name:        Milage,
 			},
 			TriggerEvent: true,
@@ -248,7 +279,7 @@ func GMLanValueMapps() []CanValueMap {
 			ArbitrationID: uint32(GMLanFullLevel),
 			CanValueDef: CanValueDef{
 				Unit:        "l",
-				Calculation: "${1} * 0.21", // 256 / 2.56 -> 100% -> OPC = 52l
+				Calculation: fmt.Sprintf("%d - (${1} * %d / 0xff)", FULL_CAPACITY_L, FULL_CAPACITY_L), // 256 / 2.56 -> 100% -> OPC = 52l
 				Condition:   "${0} == 0x00",
 				Name:        FullLevel,
 			},
@@ -257,8 +288,8 @@ func GMLanValueMapps() []CanValueMap {
 		{
 			ArbitrationID: uint32(GMLanFullInjection),
 			CanValueDef: CanValueDef{
-				Unit:        "ml",
-				Calculation: "(${1} * 256 + ${2}) * 0.03054",
+				Unit:        "1/ l/h",
+				Calculation: "(${1} * 256 + ${2}) / 4.5", // dT= 0.5s, 00 23 f1 00 e5 01 0e -> 00 24 11 00 e5 01 0e | 32 * 0.03054 = 0.97 -> 1.94 ml/s -> 6.984 l/h ?
 				Condition:   "${0} == 0x00",
 				Name:        FullInjection,
 			},
@@ -337,7 +368,7 @@ func GMLanValueMapps() []CanValueMap {
 		{
 			ArbitrationID: uint32(GMLanCruseControl),
 			CanValueDef: CanValueDef{
-				Unit:        "km/h",
+				Unit:        "",
 				Calculation: "${5}",
 				Condition:   "1 == 1",
 				Name:        CruseControl,
@@ -373,7 +404,7 @@ func EntertainmentCANValueMapps() []CanValueMap {
 			ArbitrationID: uint32(EntertainmentCANDate),
 			CanValueDef: CanValueDef{
 				Unit:             "",
-				Calculation:      "${1};${2};${3};${4}+4;${5};${6}", // as formated string (;) // Year(2) 	Month(3) 	5B:Day, 3b:Hour 	2b:Hour, 6b:Minute 	Second // see https://github.com/JJToB/Car-CAN-Message-DB/blob/master/Opel/Astra/H/MS-CAN/Body.md
+				Calculation:      "${2};${3};${4}>>3;((${4}&0x07)<<2)+(${5}>>6);${5}&0x3f;${6}",
 				FormatSeperators: []string{"-", "-", "T", ":", ":"}, // 2007-12-24T18:21
 				Condition:        "1 == 1",                          // ever
 				Name:             DateTime,
@@ -381,30 +412,30 @@ func EntertainmentCANValueMapps() []CanValueMap {
 			TriggerEvent: true,
 		},
 		{
-			ArbitrationID: uint32(EntertainmentCANAirConditioner),
+			ArbitrationID: uint32(EntertainmentCANAirConditioner), // calc stimmt nicht
 			CanValueDef: CanValueDef{
 				Unit:        "°C",
-				Calculation: "${5} / 2",
-				Condition:   "${0} == 0x22",
+				Calculation: "${5} & 0x3f",  // oberstes bit (0x80) -> low or high
+				Condition:   "${0} == 0x22", // ${0} == 0x22
 				Name:        ACTemperature,
 			},
 			TriggerEvent: true,
 		},
 		{
-			ArbitrationID: uint32(EntertainmentCANAirConditioner),
+			ArbitrationID: uint32(EntertainmentCANAirConditioner), // stimmt (langsam...?)
 			CanValueDef: CanValueDef{
 				Unit:        "rpm",
-				Calculation: "${3}",
+				Calculation: "${3} & 0x0f",
 				Condition:   "${0} == 0x22",
 				Name:        ACFanSpeed,
 			},
 			TriggerEvent: true,
 		},
 		{
-			ArbitrationID: uint32(EntertainmentCANAirConditioner),
+			ArbitrationID: uint32(EntertainmentCANAirConditioner), // kann sein (langsam)
 			CanValueDef: CanValueDef{
 				Unit:        "",
-				Calculation: "${3}",
+				Calculation: "${6}",
 				Condition:   "${0} == 0x21",
 				Name:        ACMode,
 			},

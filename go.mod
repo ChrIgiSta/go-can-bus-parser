@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	fyne.io/fyne/v2 v2.4.0
+	github.com/ChrIgiSta/go-utils v0.0.0-20231014141108-e8ddee17b11d
 	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/angelodlfrtr/go-can v0.0.4
 	go.bug.st/serial v1.6.1

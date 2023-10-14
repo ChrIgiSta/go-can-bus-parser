@@ -1,3 +1,28 @@
+/**
+ * Copyright © 2023, Staufi Tech - Switzerland
+ * All rights reserved.
+ *
+ *   ________________________   ___ _     ________________  _  ____
+ *  / _____  _  ____________/  / __|_|   /_______________  | | ___/
+ * ( (____ _| |_ _____ _   _ _| |__ _      | |_____  ____| |_|_
+ *  \____ (_   _|____ | | | (_   __) |     | | ___ |/ ___)  _  \
+ *  _____) )| |_/ ___ | |_| | | |  | |     | | ____( (___| | | |
+ * (______/  \__)_____|____/  |_|  |_|     |_|_____)\____)_| |_|
+ *
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package can
 
 import (
@@ -104,6 +129,25 @@ func TestMidspeedDecoder(t *testing.T) {
 		t.Error("row 1 display")
 	}
 	fmt.Println(row1Display)
+
+	// DateTime
+	dateData := [8]byte{0x46, 0x01, 0x17, 0x0a, 0x5d, 0x12, 0x27, 0xff}
+	err := d.EntertainmentCANDecoder(&can.Frame{
+		ArbitrationID: uint32(EntertainmentCANDate),
+		DLC:           8,
+		Data:          dateData,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	dt := d.GetEntertainmentCANValue(DateTime)
+	if dt.CanValueDef.Value != "23-10-11T20:18:39" {
+		t.Error("Midspeed DateTime")
+	}
+	fmt.Println(dt.CanValueDef.Value)
+
+	// // ClimaData
+	// acData := []byte{0x23, 0xe0, 0x50, 0x00, 0x37, 0x20, 0x26, 0x02}
 
 }
 

@@ -1,9 +1,35 @@
+/**
+ * Copyright © 2023, Staufi Tech - Switzerland
+ * All rights reserved.
+ *
+ *   ________________________   ___ _     ________________  _  ____
+ *  / _____  _  ____________/  / __|_|   /_______________  | | ___/
+ * ( (____ _| |_ _____ _   _ _| |__ _      | |_____  ____| |_|_
+ *  \____ (_   _|____ | | | (_   __) |     | | ___ |/ ___)  _  \
+ *  _____) )| |_/ ___ | |_| | | |  | |     | | ____( (___| | | |
+ * (______/  \__)_____|____/  |_|  |_|     |_|_____)\____)_| |_|
+ *
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package serial
 
 import (
 	"GMCanDecoder/connection"
-	"log"
 	"sync"
+
+	log "github.com/ChrIgiSta/go-utils/logger"
 
 	"github.com/angelodlfrtr/go-can"
 	"github.com/angelodlfrtr/go-can/transports"
@@ -77,7 +103,7 @@ func (s *Serial) Connect(wg *sync.WaitGroup) (<-chan *can.Frame, error) {
 		for true {
 			canFrame, ok := <-s.bus.ReadChan()
 			if !ok {
-				log.Println("error read can iface: ", err)
+				log.Error("serial can", "read can iface: %v", err)
 				return
 			}
 			rxCh <- canFrame
@@ -111,7 +137,7 @@ func (s *Serial) connectNative(wg *sync.WaitGroup) (<-chan *can.Frame, error) {
 		for true {
 			n, err := s.com.Read(buffer)
 			if err != nil {
-				log.Println("error reading serial, ", err)
+				log.Error("serial can", "reading serial, %v", err)
 				return
 			}
 			rxCh <- s.customParser.Unmarshal(buffer[:n])
