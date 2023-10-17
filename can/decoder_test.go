@@ -125,7 +125,7 @@ func TestMidspeedDecoder(t *testing.T) {
 			r1c3.CanValueDef.Value.(string) + "," +
 			r1c4.CanValueDef.Value.(string))
 
-	if row1Display != "No Source   !!" {
+	if row1Display != "No Source   " {
 		t.Error("row 1 display")
 	}
 	fmt.Println(row1Display)

@@ -44,21 +44,25 @@ func NewCanDriveParser() *CanDriveParser {
 func (p *CanDriveParser) Unmarshal(in []byte) *can.Frame {
 	split := strings.Split(string(in), ",")
 	if len(split) != 4 {
-		log.Error("parser", "canDrive Pck don't seem to formated properly. rx: %s", string(in))
+		log.Error("custom parser",
+			"canDrive Pck don't seem to formated properly. rx: %s", string(in))
 		return nil
 	}
 	arbitrationID, err := strconv.ParseUint(split[0], 16, 32)
 	if err != nil {
-		log.Error("parser", "cannot parse canDrive Formated arbitration id: %v", err)
+		log.Error("custom parser",
+			"cannot parse canDrive Formated arbitration id: %v", err)
 		return nil
 	}
 	data, err := hex.DecodeString(split[3])
 	if err != nil {
-		log.Error("parser", "cannot parse canDrive Formated data: %v", err)
+		log.Error("custom parser",
+			"cannot parse canDrive Formated data: %v", err)
 		return nil
 	}
 	if len(data) > 8 {
-		log.Error("parser", "data length higher than 8 bytes. %d", len(data))
+		log.Error("custom parser",
+			"data length higher than 8 bytes. %d", len(data))
 		return nil
 	}
 

@@ -26,9 +26,11 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func InterfaceToString(i any) string {
@@ -44,5 +46,52 @@ func ComaSeperatedDecimalsToAscii(in string) string {
 		num, _ := strconv.Atoi(element)
 		intArray = append(intArray, byte(num))
 	}
-	return string(intArray)
+	return string(intArray[:len(intArray)-2])
+}
+
+func CanTimeStringToTime(timeStr string) (time.Time, error) {
+
+	var t time.Time
+
+	split := strings.Split(timeStr, "T")
+	if len(split) != 2 {
+		return t, errors.New("unknown format")
+	}
+	dataSplit := strings.Split(split[0], "-")
+	if len(dataSplit) != 3 {
+		return t, errors.New("date format")
+	}
+	timeSplit := strings.Split(split[1], ":")
+	if len(timeSplit) != 3 {
+		return t, errors.New("time format")
+	}
+
+	layout := "2006-01-02T15:04:05Z"
+
+	year, err := strconv.Atoi(dataSplit[0])
+	if err != nil {
+		return t, errors.New("parse year")
+	}
+	month, err := strconv.Atoi(dataSplit[1])
+	if err != nil {
+		return t, errors.New("parse month")
+	}
+	day, err := strconv.Atoi(dataSplit[2])
+	if err != nil {
+		return t, errors.New("parse day")
+	}
+	hours, err := strconv.Atoi(timeSplit[0])
+	if err != nil {
+		return t, errors.New("parse hour")
+	}
+	mins, err := strconv.Atoi(timeSplit[1])
+	if err != nil {
+		return t, errors.New("parse minutes")
+	}
+	secs, err := strconv.Atoi(timeSplit[2])
+	if err != nil {
+		return t, errors.New("parse seconds")
+	}
+
+	return time.Parse(layout, fmt.Sprintf("%04d-%02d-%02dT%02d:%02d:%02dZ", year+2000, month, day, hours, mins, secs))
 }

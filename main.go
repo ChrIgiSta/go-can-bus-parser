@@ -37,31 +37,55 @@ import (
 	log "github.com/ChrIgiSta/go-utils/logger"
 )
 
-var testGui *gui.TestGui
+type GuiType string
+
+const (
+	GuiTypeNone     GuiType = "None"
+	GuiTypeTest     GuiType = "Test"
+	GuiTypeOriginal GuiType = "Original"
+)
+
+const (
+	// TcpHost = "192.168.43.20"
+	TcpHost = "192.168.1.234"
+)
+
+var (
+	testGui     *gui.TestGui
+	originalGui *gui.OriginalGui
+
+	guiType GuiType = GuiTypeOriginal
+)
 
 func main() {
 	var wg sync.WaitGroup = sync.WaitGroup{}
 	defer wg.Done()
 
+	isUpdatable := utils.IsUpdatable()
+	if isUpdatable {
+		log.Info("main", "update application")
+		err := utils.Update()
+		if err != nil {
+			log.Error("main", "update: %v", err)
+		}
+	}
+
 	wg.Add(1)
 
-	// conn := serial.NewSerial(serial.SERIAL_CAN_DEFAULT_PORT, serial.SERLAL_CAN_DEFAULT_BAUDRATE)
-	// conn := tcp.NewTcpClient("192.168.43.20", 9001)
+	connLow := tcp.NewTcpClientCustomParser(TcpHost, 9000, utils.NewCanDriveParser())
+	rxChannelLow, err := connLow.Connect(&wg)
+	if err != nil {
+		log.Error("main", "lospeed can init: %v", err)
+	}
+	defer connLow.Disconnect()
 
-	// connLow := tcp.NewTcpClientCustomParser("192.168.43.20", 9000, utils.NewCanDriveParser())
-	// rxChannelLow, err := connLow.Connect(&wg)
-	// if err != nil {
-	// 	log.Panic(err)
-	// }
-	// defer connLow.Disconnect()
-
-	conn := tcp.NewTcpClientCustomParser("192.168.43.20", 9001, utils.NewCanDriveParser())
-	rxChannel, err := conn.Connect(&wg)
+	connMid := tcp.NewTcpClientCustomParser(TcpHost, 9001, utils.NewCanDriveParser())
+	rxChannelMid, err := connMid.Connect(&wg)
 	if err != nil {
 		log.Error("main", "get tcp client: %v", err)
 		panic(err)
 	}
-	defer conn.Disconnect()
+	defer connMid.Disconnect()
 
 	decoder := can.NewCanDecoder()
 	evtChannel := decoder.GetEventChannel()
@@ -70,32 +94,38 @@ func main() {
 		eventDecoder(evtChannel)
 	}()
 
-	testGui = gui.NewTestGui()
+	switch guiType {
+	case GuiTypeTest:
+		testGui = gui.NewTestGui()
+	case GuiTypeOriginal:
+		originalGui = gui.NewOriginalGui()
+	}
 
-	// go func() {
-	// 	log.Println("start rx low")
-	// 	for true {
-	// 		canFrame, ok := <-rxChannelLow
-	// 		if !ok {
-	// 			log.Panic("error rx channel")
-	// 		}
-	// 		err = decoder.GMLanDecoder(canFrame)
-	// 		if err != nil {
-	// 			log.Println("error decoding frame, ", err)
-	// 		}
-	// 	}
-	// }()
+	go func() {
+		log.Debug("main", "start rx low")
+		for true {
+			canFrame, ok := <-rxChannelLow
+			if !ok {
+				log.Error("main", "rx channel")
+				panic(ok)
+			}
+			err = decoder.GMLanDecoder(canFrame)
+			if err != nil {
+				log.Error("main", "decoding frame: %v", err)
+			}
+		}
+	}()
 
 	go func() {
 		log.Debug("main", "start rx")
 		for true {
-			canFrame, ok := <-rxChannel
+			canFrame, ok := <-rxChannelMid
 			if !ok {
 				log.Error("main", "error rx channel")
 				panic(ok)
 			}
-			if canFrame.ArbitrationID == uint32(can.EntertainmentCANAirConditioner) && canFrame.Data[0] == 0x22 {
-				log.Debug("main", "RX > ArbID: [0x%X] %d, \tData: %v \t[0x%X]\t%s", canFrame.ArbitrationID, canFrame.ArbitrationID, canFrame.Data, canFrame.Data, canFrame.Data)
+			if canFrame.ArbitrationID == uint32(can.EntertainmentCANAirConditioner) { // && canFrame.Data[0] == 0x21
+				log.Info("main", "RX > ArbID: [0x%X] %d, \tData: %v \t[0x%X]\t%s", canFrame.ArbitrationID, canFrame.ArbitrationID, canFrame.Data, canFrame.Data, canFrame.Data)
 			}
 			err = decoder.EntertainmentCANDecoder(canFrame)
 			if err != nil {
@@ -103,12 +133,18 @@ func main() {
 			}
 			// err = decoder.GMLanDecoder(canFrame)
 			// if err != nil {
-			// 	log.Println("error decoding frame, ", err)
+			// 	log.Error("main", "decoding frame: %v", err)
 			// }
 		}
 	}()
 
-	testGui.Draw()
+	if testGui != nil {
+		testGui.Draw()
+	}
+	if originalGui != nil {
+		originalGui.ShowDefaultView()
+	}
+
 }
 
 func eventDecoder(rxChannel <-chan can.CanValueMap) {
@@ -156,6 +192,56 @@ func eventDecoder(rxChannel <-chan can.CanValueMap) {
 				}
 			} else {
 				testGui.UpdateValue(string(canMsg.CanValueDef.Name), canMsg.CanValueDef.Value, canMsg.CanValueDef.Unit)
+			}
+		}
+		if originalGui != nil {
+			switch canMsg.CanValueDef.Name {
+			case can.ACFanSpeed:
+				originalGui.UpdateClimaFanSpeed(int(canMsg.CanValueDef.Value.(float64)))
+			case can.ACMode:
+				switch int(canMsg.CanValueDef.Value.(float64)) {
+				case can.AC_MODE_FOOD:
+					originalGui.UpdateClimaMode(gui.AcModeBot)
+				case can.AC_MODE_AUTO:
+					originalGui.UpdateClimaMode(gui.AcModeAuto)
+				case can.AC_MODE_BODY:
+					originalGui.UpdateClimaMode(gui.AcModeMid)
+				case can.AC_MODE_BODY_FOOD:
+					originalGui.UpdateClimaMode(gui.AcModeMidBod)
+				case can.AC_MODE_HEAD:
+					originalGui.UpdateClimaMode(gui.AcModeTop)
+				case can.AC_MODE_HEAD_BODY:
+					originalGui.UpdateClimaMode(gui.AcModeTopMid)
+				case can.AC_MODE_HEAD_BODY_FOOD:
+					originalGui.UpdateClimaMode(gui.AcModeAll)
+				case can.AC_MODE_HEAD_FOOD:
+					originalGui.UpdateClimaMode(gui.AcModeTopBod)
+				}
+
+			case can.ACTemperature:
+				originalGui.UpdateClimaTemperature(int(canMsg.CanValueDef.Value.(float64)), canMsg.CanValueDef.Unit)
+			case can.CoolantTemperature:
+				originalGui.UpdateCoolantTemp(int(canMsg.CanValueDef.Value.(float64)), canMsg.CanValueDef.Unit)
+			case can.DateTime:
+				t, err := utils.CanTimeStringToTime(canMsg.CanValueDef.Value.(string))
+				if err != nil {
+					log.Error("main", "parsing time: %v", err)
+					break
+				}
+				originalGui.UpdateTime(t)
+			case can.DisplayR1C1, can.DisplayR1C2, can.DisplayR1C3, can.DisplayR1C4:
+				row1 := displayR1C1 + "," + displayR1C2 + "," + displayR1C3 + "," + displayR1C4
+				originalGui.UpdateTitle(utils.ComaSeperatedDecimalsToAscii(row1))
+			case can.OutdoorTemperature:
+				originalGui.UpdateOutdoorTemperature(float32(canMsg.CanValueDef.Value.(float64)), canMsg.CanValueDef.Unit)
+			case can.FullInjection:
+				if speed < 5 {
+					originalGui.UpdateCurrentConsumtion(float32(currentIgnition), "l/h")
+				} else {
+					originalGui.UpdateCurrentConsumtion(float32(currentIgnition), "l/100km")
+				}
+			case can.LeftTravelRange:
+				originalGui.UpdateRange(int(canMsg.CanValueDef.Value.(float64)), canMsg.CanValueDef.Unit)
 			}
 		}
 	}

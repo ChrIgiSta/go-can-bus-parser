@@ -59,6 +59,10 @@ const (
 	TPMS               CanVars = "Tire Pressure Monitoring System"
 	CruseControl       CanVars = "Cruse Control" // tested
 	SystemTime         CanVars = "System Time"
+	DisplayTemperature CanVars = "Display Temperature"
+	SensorTemperature  CanVars = "Outdoor Sensor Temperature"
+	LeftTravelRange    CanVars = "Range" // tested
+	RangeWarning       CanVars = "Range Warning"
 )
 
 // low speed
@@ -102,6 +106,18 @@ const (
 	ENGINE_RUNNING_DRIVING = 0x23 // -> 2 engine running and driving -> 3 ignition
 
 	CRUSE_CONTROLL_ON = 0x06 // 0x04 off
+
+	RANGE_WARNING_OFF = 0x03
+	RANGE_WARNING_ON  = 0x00
+
+	AC_MODE_AUTO           = 89
+	AC_MODE_HEAD           = 83
+	AC_MODE_BODY           = 85
+	AC_MODE_FOOD           = 87
+	AC_MODE_HEAD_BODY      = 84
+	AC_MODE_HEAD_FOOD      = 88
+	AC_MODE_BODY_FOOD      = 86
+	AC_MODE_HEAD_BODY_FOOD = 82
 )
 
 // mid speed
@@ -146,11 +162,22 @@ const (
 type EntertainmentCANArbitrationIDs uint32
 
 const (
-	EntertainmentCANDisplayData    EntertainmentCANArbitrationIDs = 0x6c1 // partialy tested
-	EntertainmentCANAirConditioner EntertainmentCANArbitrationIDs = 0x6c8 //
+	EntertainmentCANDate                 GMLanArbitrationIDs            = 0x180 // tested
+	EntertainmentCANDistance             GMLanArbitrationIDs            = 0x188
+	EntertainmentCANRadioButtons         GMLanArbitrationIDs            = 0x201
+	EntertainmentCANSteeringWheelButtons GMLanArbitrationIDs            = 0x206
+	EntertainmentCANACKnobs              GMLanArbitrationIDs            = 0x208
+	EntertainmentCANEngineMotion         GMLanArbitrationIDs            = 0x4e8
+	EntertainmentCANEngineTemperature    GMLanArbitrationIDs            = 0x4ec
+	EntertainmentCANFullInjection        GMLanArbitrationIDs            = 0x4ed
+	EntertainmentCANRange                GMLanArbitrationIDs            = 0x4ee
+	EntertainmentCANDisplayTemperature   GMLanArbitrationIDs            = 0x682 // tested
+	EntertainmentCANSensorTemperature    GMLanArbitrationIDs            = 0x683 // tested
+	EntertainmentCANTPMSPressure         GMLanArbitrationIDs            = 0x684
+	EntertainmentCANTPMSBattery          GMLanArbitrationIDs            = 0x685
+	EntertainmentCANDisplayData          EntertainmentCANArbitrationIDs = 0x6c1 // partialy tested
+	EntertainmentCANAirConditioner       EntertainmentCANArbitrationIDs = 0x6c8 // -> knöpfe?
 	// EntertainmentCANAirConditioner GMLanArbitrationIDs = 0x206 //
-	EntertainmentCANDate GMLanArbitrationIDs = 0x180 // tested
-	// EntertainmentCANAirConditioner GMLanArbitrationIDs = 0x683 // don't work after python -> possibly, this was mid speed can -> not possibly, it is
 )
 
 type HighSpeedCANArbitrationIDs uint32
@@ -390,54 +417,174 @@ func GMLanValueMapps() []CanValueMap {
 
 func EntertainmentCANValueMapps() []CanValueMap {
 	return []CanValueMap{
-		// {
-		// 	ArbitrationID: uint32(EntertainmentCANOutdoorTemperatureSensor),
-		// 	CanValueDef: CanValueDef{
-		// 		Unit:        "°C",
-		// 		Calculation: "${2} / 2 - 40", // as normal calculation
-		// 		Condition:   "${0} == 0x46 && ${1} == 0x01",
-		// 		Name:        OutdoorTemperature,
-		// 	},
-		// 	TriggerEvent: true,
-		// },
+		{
+			ArbitrationID: uint32(EntertainmentCANDisplayTemperature),
+			CanValueDef: CanValueDef{
+				Unit:        "°C",
+				Calculation: "${2} / 2 - 40", // as normal calculation
+				Condition:   "${0} == 0x46 && ${1} == 0x01",
+				Name:        DisplayTemperature,
+			},
+			TriggerEvent: true,
+		},
+		{
+			ArbitrationID: uint32(EntertainmentCANSensorTemperature),
+			CanValueDef: CanValueDef{
+				Unit:        "°C",
+				Calculation: "${2} / 2 - 40", // as normal calculation
+				Condition:   "${0} == 0x46 && ${1} == 0x01",
+				Name:        SensorTemperature,
+			},
+			TriggerEvent: true,
+		},
 		{
 			ArbitrationID: uint32(EntertainmentCANDate),
 			CanValueDef: CanValueDef{
 				Unit:             "",
 				Calculation:      "${2};${3};${4}>>3;((${4}&0x07)<<2)+(${5}>>6);${5}&0x3f;${6}",
-				FormatSeperators: []string{"-", "-", "T", ":", ":"}, // 2007-12-24T18:21
+				FormatSeperators: []string{"-", "-", "T", ":", ":"}, // 23-01-24T18:21:3
 				Condition:        "1 == 1",                          // ever
 				Name:             DateTime,
 			},
 			TriggerEvent: true,
 		},
 		{
-			ArbitrationID: uint32(EntertainmentCANAirConditioner), // calc stimmt nicht
+			ArbitrationID: uint32(EntertainmentCANAirConditioner), // works
 			CanValueDef: CanValueDef{
 				Unit:        "°C",
-				Calculation: "${5} & 0x3f",  // oberstes bit (0x80) -> low or high
-				Condition:   "${0} == 0x22", // ${0} == 0x22
+				Calculation: "(((${3} & 0x03) * 10) + (${5} & 0x3f))-48", // oberstes bit (0x80) -> low or high
+				Condition:   "${0} == 0x22 && ${1} == 0x03",              // ${0} == 0x22
 				Name:        ACTemperature,
 			},
 			TriggerEvent: true,
 		},
 		{
-			ArbitrationID: uint32(EntertainmentCANAirConditioner), // stimmt (langsam...?)
+			ArbitrationID: uint32(EntertainmentCANAirConditioner), // don't prove
+			CanValueDef: CanValueDef{
+				Unit:        "°C",
+				Calculation: "100", // Hi
+				Condition:   "${0} == 0x22 && ${1} == 0x48",
+				Name:        ACTemperature,
+			},
+			TriggerEvent: true,
+		},
+		{
+			ArbitrationID: uint32(EntertainmentCANAirConditioner), // don't prove
+			CanValueDef: CanValueDef{
+				Unit:        "°C",
+				Calculation: "-100", // Low
+				Condition:   "${0} == 0x22 && ${1} == 0x4c",
+				Name:        ACTemperature,
+			},
+			TriggerEvent: true,
+		},
+		{
+			ArbitrationID: uint32(EntertainmentCANAirConditioner), // works
 			CanValueDef: CanValueDef{
 				Unit:        "rpm",
 				Calculation: "${3} & 0x0f",
-				Condition:   "${0} == 0x22",
+				Condition:   "${0} == 0x22 && ${1} == 0x50",
 				Name:        ACFanSpeed,
 			},
 			TriggerEvent: true,
 		},
 		{
-			ArbitrationID: uint32(EntertainmentCANAirConditioner), // kann sein (langsam)
+			ArbitrationID: uint32(EntertainmentCANAirConditioner), // don't prove
+			CanValueDef: CanValueDef{
+				Unit:        "rpm",
+				Calculation: "100",
+				Condition:   "${0} == 0x23 && ${1} == 0x26",
+				Name:        ACFanSpeed,
+			},
+			TriggerEvent: true,
+		},
+		{
+			ArbitrationID: uint32(EntertainmentCANAirConditioner), // works
 			CanValueDef: CanValueDef{
 				Unit:        "",
-				Calculation: "${6}",
-				Condition:   "${0} == 0x21",
+				Calculation: "${2}",
+				Condition:   "${0} == 0x21 && ${1} == 0xe0",
 				Name:        ACMode,
+			},
+			TriggerEvent: true,
+		},
+		{
+			ArbitrationID: uint32(EntertainmentCANAirConditioner),
+			CanValueDef: CanValueDef{
+				Unit:        "l",
+				Calculation: "52 - ${2} * 2",
+				Condition:   "0 == 0",              // ? 0x46
+				Name:        "Full Level Midspeed", // ToDO
+			},
+			TriggerEvent: true,
+		},
+		{
+			ArbitrationID: uint32(EntertainmentCANDistance),
+			CanValueDef: CanValueDef{
+				Unit:        "km",
+				Calculation: "(${2} * 256 + ${3}) * 1.5748",
+				Condition:   "${0} == 0x46",
+				Name:        "Distance??", // ToDO
+			},
+			TriggerEvent: true,
+		},
+		{
+			ArbitrationID: uint32(EntertainmentCANEngineMotion),
+			CanValueDef: CanValueDef{
+				Unit:        "rpm",
+				Calculation: "(${2} * 256 + ${3}) / 4",
+				Condition:   "${0} == 0x46",
+				Name:        EngineSpeedRPM,
+			},
+			TriggerEvent: true,
+		},
+		{
+			ArbitrationID: uint32(EntertainmentCANEngineMotion),
+			CanValueDef: CanValueDef{
+				Unit:        "km/h",
+				Calculation: "${4}",
+				Condition:   "${0} == 0x46",
+				Name:        VehicleSpeed,
+			},
+			TriggerEvent: true,
+		},
+		{
+			ArbitrationID: uint32(EntertainmentCANEngineTemperature),
+			CanValueDef: CanValueDef{
+				Unit:        "°C",
+				Calculation: "${2} - 40",
+				Condition:   "${0} == 0x46",
+				Name:        CoolantTemperature,
+			},
+			TriggerEvent: true,
+		},
+		{
+			ArbitrationID: uint32(EntertainmentCANFullInjection),
+			CanValueDef: CanValueDef{
+				Unit:        "num ignitions 0xffff is max",
+				Calculation: "${2} * 256 + ${3}",
+				Condition:   "${0} == 0x46",
+				Name:        "Ign mid", // ToDO (upcounting value -> find out, how much is the value)  highly propable means l since started -> posibilities to calc l/h
+			},
+			TriggerEvent: true,
+		},
+		{
+			ArbitrationID: uint32(EntertainmentCANRange),
+			CanValueDef: CanValueDef{
+				Unit:        "km",
+				Calculation: "(${2} * 256 + ${3}) * 0.5",
+				Condition:   "${0} == 0x46",
+				Name:        LeftTravelRange,
+			},
+			TriggerEvent: true,
+		},
+		{
+			ArbitrationID: uint32(EntertainmentCANRange),
+			CanValueDef: CanValueDef{
+				Unit:        "",
+				Calculation: "${1}",
+				Condition:   "${0} == 0x46",
+				Name:        RangeWarning,
 			},
 			TriggerEvent: true,
 		},

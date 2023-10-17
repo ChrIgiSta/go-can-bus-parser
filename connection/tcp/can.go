@@ -26,6 +26,8 @@
 package tcp
 
 import (
+	"bufio"
+	"bytes"
 	"net"
 	"strconv"
 	"sync"
@@ -66,7 +68,9 @@ func NewTcpClient(address string, port uint16) *TcpClient {
 	}
 }
 
-func NewTcpClientCustomParser(address string, port uint16, parser connection.CanFrameParser) *TcpClient {
+func NewTcpClientCustomParser(address string, port uint16,
+	parser connection.CanFrameParser) *TcpClient {
+
 	return &TcpClient{
 		address:         address,
 		port:            port,
@@ -127,10 +131,15 @@ func (c *TcpClient) connectTcpNative(wg *sync.WaitGroup) (<-chan *can.Frame, err
 			b, err := c.tcp.Read(buffer)
 			if err != nil {
 				log.Error("tcp can", "read tcp driveMode: %v", err)
-			}
-			canFrame := c.customParser.Unmarshal(buffer[:b-1])
-			if canFrame != nil {
-				rxCh <- canFrame
+			} else if b > 0 {
+				// line for line
+				scanner := bufio.NewScanner(bytes.NewBuffer(buffer[:b-1]))
+				for scanner.Scan() {
+					canFrame := c.customParser.Unmarshal(scanner.Bytes())
+					if canFrame != nil {
+						rxCh <- canFrame
+					}
+				}
 			}
 		}
 	}()

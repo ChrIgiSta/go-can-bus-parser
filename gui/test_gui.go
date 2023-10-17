@@ -74,7 +74,7 @@ func (g *TestGui) createNewTable() {
 			return len(g.items), 2
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("Template XYZXYZXYZ")
+			return widget.NewLabel("Template XYZXYZXYZererdrdedrd")
 		},
 		func(i widget.TableCellID, o fyne.CanvasObject) {
 			item := g.items[i.Row]

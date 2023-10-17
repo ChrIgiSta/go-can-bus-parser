@@ -3,11 +3,14 @@ module GMCanDecoder
 go 1.20
 
 require (
+	fyne.io/fyne v1.4.3
 	fyne.io/fyne/v2 v2.4.0
-	github.com/ChrIgiSta/go-utils v0.0.0-20231014141108-e8ddee17b11d
+	github.com/ChrIgiSta/go-utils v0.0.0-20231014141458-bb0b6fff1158
 	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/angelodlfrtr/go-can v0.0.4
+	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf
 	go.bug.st/serial v1.6.1
+	golang.org/x/net v0.14.0
 )
 
 require (
@@ -36,8 +39,7 @@ require (
 	github.com/yuin/goldmark v1.5.5 // indirect
 	golang.org/x/image v0.11.0 // indirect
 	golang.org/x/mobile v0.0.0-20230531173138-3c911d8e3eda // indirect
-	golang.org/x/net v0.14.0 // indirect
-	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/text v0.12.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/js/dom v0.0.0-20210725211120-f030747120f2 // indirect
